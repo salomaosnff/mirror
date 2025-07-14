@@ -25,6 +25,11 @@ jobs:
         run: |
           pacman -Syu --noconfirm base-devel git
 
+      - name: Create user
+        run: |
+          sudo useradd -m builder
+          sudo passwd -d builder
+
       - name: Verificar pacotes do PR alterados e compilar
         if: github.event_name == 'pull_request'
         run: |
@@ -43,7 +48,7 @@ jobs:
 
             if [[ ! -f "$output_file" ]]; then
               echo "Compilando $pkgname..."
-              makepkg -s --noconfirm --clean --cleanbuild
+              sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
               cp *.pkg.tar.zst ../../repo/
             fi
             cd ..
@@ -60,7 +65,7 @@ jobs:
             cd "$dir"
             if [[ -f PKGBUILD ]]; then
               echo "Compilando $pkgname..."
-              makepkg -sf --noconfirm --clean --cleanbuild
+              sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
               cp *.pkg.tar.zst ../../repo/
             fi
             cd ..
