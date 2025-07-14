@@ -104,8 +104,8 @@ jobs:
 
       - name: Commit e Push
         run: |
-          git config --config user.name "github-actions"
-          git config --config user.email "actions@github.com"
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
           git add repo/*.pkg.tar.zst
           git add repo/*.db* repo/*.files*
           git commit -m "Atualiza repositório com novos pacotes" || echo "Nada para commitar"
