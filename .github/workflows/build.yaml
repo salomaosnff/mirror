@@ -29,6 +29,7 @@ jobs:
         run: |
           sudo useradd -m builder
           sudo passwd -d builder
+          sudo chmod 777 -R $GITHUB_WORKSPACE
 
       - name: Verificar pacotes do PR alterados e compilar
         if: github.event_name == 'pull_request'
