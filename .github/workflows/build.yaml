@@ -59,20 +59,15 @@ jobs:
           for dir in */; do
             cd "$dir"
             echo "Compilando pacotes em $dir..."
-            if [[ ! -e PKGBUILD ]]; then
-              echo "PKGBUILD não encontrado em $dir, pulando..."
-              cd ..
-              continue
-            fi
-            pkgname=$(source PKGBUILD && echo $pkgname)
-            pkgver=$(source PKGBUILD && echo $pkgver)
-            pkgrel=$(source PKGBUILD && echo $pkgrel)
-            arch=$(source PKGBUILD && echo ${arch[0]})
-            output_file="../../repo/${pkgname}-${pkgver}-${pkgrel}-${arch}.pkg.tar.zst"
-
-            if [[ ! -f "$output_file" ]]; then
+            if [[ -f PKGBUILD ]]; then
               echo "Compilando $pkgname..."
-              makepkg -s --noconfirm --clean --cleanbuild
+              pkgname=$(source PKGBUILD && echo $pkgname)
+              pkgver=$(source PKGBUILD && echo $pkgver)
+              pkgrel=$(source PKGBUILD && echo $pkgrel)
+              arch=$(source PKGBUILD && echo ${arch[0]})
+              output_file="../../repo/${pkgname}-${pkgver}-${pkgrel}-${arch}.pkg.tar.zst"
+
+              makepkg -sf --noconfirm --clean --cleanbuild
               cp *.pkg.tar.zst ../../repo/
             fi
             cd ..
