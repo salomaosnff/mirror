@@ -103,8 +103,9 @@ jobs:
           repo-add -n -R orion.db.tar.gz *.pkg.tar.zst
 
       - name: Commit e Push
-        working-directory: repo-clone
         run: |
+          ls ${GITHUB_WORKSPACE}/repo
+          ls ${github.workspace}/repo
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add repo/*.pkg.tar.zst
