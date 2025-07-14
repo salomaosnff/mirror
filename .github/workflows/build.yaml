@@ -28,6 +28,7 @@ jobs:
       - name: Instalar dependências
         run: |
           pacman -Syu --noconfirm base-devel git
+          pwd
 
       - name: Create user
         run: |
@@ -104,6 +105,7 @@ jobs:
 
       - name: Commit e Push
         run: |
+          pwd
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
           git add repo/*.pkg.tar.zst
