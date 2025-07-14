@@ -59,7 +59,7 @@ jobs:
           for dir in */; do
             cd "$dir"
             echo "Compilando pacotes em $dir..."
-            if [[ ! -f PKGBUILD ]]; then
+            if [[ ! -e PKGBUILD ]]; then
               echo "PKGBUILD não encontrado em $dir, pulando..."
               cd ..
               continue
