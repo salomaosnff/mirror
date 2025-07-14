@@ -67,7 +67,11 @@ jobs:
             cd "$dir"
             if [[ -f PKGBUILD ]]; then
               echo "Compilando $pkgname..."
-              sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
+                if grep -q '^package()' PKGBUILD; then
+                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
+                else
+                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -d --noconfirm"
+                fi
               cp *.pkg.tar.zst ../../repo/
             fi
             cd ..
