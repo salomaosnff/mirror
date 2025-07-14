@@ -2,6 +2,8 @@ name: Build Pacman Packages
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
   pull_request:
     types: [opened, synchronize]
 
@@ -76,15 +78,16 @@ jobs:
             fi
             cd ..
           done
-          cd ..
 
       - name: Atualizar banco de pacotes
         run: |
+          cd ${GITHUB_WORKSPACE}
           cd repo
           repo-add -n -R orion.db.tar.gz *.pkg.tar.zst
 
       - name: Commit e Push
         run: |
+          cd ${GITHUB_WORKSPACE}
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add repo/*.pkg.tar.zst
