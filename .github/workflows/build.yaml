@@ -78,6 +78,21 @@ jobs:
             fi
             cd ..
           done
+      - name: Verificar pacotes do push
+        if: github.event_name == 'push'
+        run: |
+          mkdir -p repo
+          cd packages
+
+          CHANGED_DIRS=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^packages/' | cut -d/ -f2 | sort -u)
+
+          for dir in $CHANGED_DIRS; do
+            cd "$dir"
+            echo "Compilando $pkgname..."
+            sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
+            cp *.pkg.tar.zst ${GITHUB_WORKSPACE}/repo/
+            cd ..
+          done
 
       - name: Atualizar banco de pacotes
         run: |
