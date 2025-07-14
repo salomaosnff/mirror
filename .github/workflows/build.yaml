@@ -58,6 +58,12 @@ jobs:
 
           for dir in */; do
             cd "$dir"
+            echo "Compilando pacotes em $dir..."
+            if [[ ! -f PKGBUILD ]]; then
+              echo "PKGBUILD não encontrado em $dir, pulando..."
+              cd ..
+              continue
+            fi
             pkgname=$(source PKGBUILD && echo $pkgname)
             pkgver=$(source PKGBUILD && echo $pkgver)
             pkgrel=$(source PKGBUILD && echo $pkgrel)
