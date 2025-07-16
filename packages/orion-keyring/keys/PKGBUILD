@@ -1,0 +1,18 @@
+pkgname=orion-keyring
+pkgver=1
+pkgrel=1
+pkgdesc="Chave pública para assinar pacotes do Orion Linux"
+arch=('any')
+url="https://sallon.dev/orion-linux"
+license=('custom')
+install=orion-keyring.install
+source=("keys/orion.asc")
+sha256sums=('SKIP')  # ou calcule o hash depois
+
+package() {
+  install -dm755 "$pkgdir/usr/share/pacman/keyrings"
+  install -Dm644 "$srcdir/keys/orion.gpg" "$pkgdir/usr/share/pacman/keyrings/orion.gpg"
+
+  # arquivo vazio usado para desativar blacklist
+  touch "$pkgdir/usr/share/pacman/keyrings/orion-trusted"
+}

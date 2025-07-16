@@ -1,0 +1,12 @@
+post_install() {
+  pacman-key --add /usr/share/pacman/keyrings/orion.gpg
+  pacman-key --lsign-key C7C3766AE5979ABC
+}
+
+post_upgrade() {
+  post_install
+}
+
+post_remove() {
+  pacman-key --delete C7C3766AE5979ABC
+}
