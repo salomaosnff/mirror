@@ -87,6 +87,8 @@ jobs:
             echo "Assinando pacote $pkg"
              sudo -u builder bash -c  "gpg --detach-sign --pinentry-mode loopback --passphrase --passphrase-fd 0 --output \"$pkg.sig\" --sign $pkg  --passphrase-fd 0 <<< \"$GPG_PASSPHRASE\""
           done
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
 
       - name: Atualizar banco de pacotes
