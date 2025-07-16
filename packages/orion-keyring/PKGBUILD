@@ -6,7 +6,7 @@ arch=('any')
 url="https://sallon.dev/orion-linux"
 license=('custom')
 install=orion-keyring.install
-source=("keys/orion.asc")
+source=("keys/orion.gpg")
 sha256sums=('SKIP')  # ou calcule o hash depois
 
 package() {

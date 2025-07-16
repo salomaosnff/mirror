@@ -2,12 +2,6 @@ name: Build Pacman Packages
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'packages/**'
-  pull_request:
-    types: [opened, synchronize]
 
 permissions:
   contents: write
