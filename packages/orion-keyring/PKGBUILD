@@ -6,7 +6,6 @@ arch=('any')
 url="https://sallon.dev/orion-linux"
 license=('custom')
 install=orion-keyring.install
-sha256sums=('SKIP')  # ou calcule o hash depois
 
 package() {
   install -dm755 "$pkgdir/usr/share/pacman/keyrings"
