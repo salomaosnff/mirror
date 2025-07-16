@@ -19,18 +19,18 @@ jobs:
     container: archlinux:latest
 
     steps:
-      - name: Checkout PR
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Instalar dependências
         run: |
           pacman -Syu --noconfirm base-devel git
           ls -la
           git rev-parse --is-inside-work-tree
           pwd
-
+          
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
       - name: Create user
         run: |
           git rev-parse --is-inside-work-tree
