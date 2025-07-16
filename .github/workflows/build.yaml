@@ -72,9 +72,9 @@ jobs:
             if [[ -f PKGBUILD ]]; then
               echo "Compilando $pkgname..."
                 if grep -q '^package()' PKGBUILD; then
-                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild --sign --passphrase-fd 0 <<< "$GPG_PASSPHRASE""
+                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild --sign --passphrase-fd 0 <<< '$GPG_PASSPHRASE'"
                 else
-                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -d --noconfirm --sign --passphrase-fd 0 <<< "$GPG_PASSPHRASE""
+                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -d --noconfirm --sign --passphrase-fd 0 <<< '$GPG_PASSPHRASE'"
                 fi
               cp *.pkg.tar.zst ../../repo/
             fi
