@@ -19,17 +19,16 @@ jobs:
     container: archlinux:latest
 
     steps:
+      - name: Instalar dependências
+        run: |
+          pacman -Syu --noconfirm base-devel git gnupg
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+   
       - name: Checkout PR
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
           fetch-depth: 0
-
-      - name: Instalar dependências
-        run: |
-          pacman -Syu --noconfirm base-devel git
-          pwd
-
+          
       - name: Create user
         run: |
           useradd -m builder
@@ -37,33 +36,34 @@ jobs:
           echo "builder ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/builder
           chmod 777 -R $GITHUB_WORKSPACE
 
-      - name: Verificar pacotes do PR alterados e compilar
-        if: github.event_name == 'pull_request'
+      - name: Importar chave GPG
         run: |
-          mkdir -p repo
-          cd packages
+          mkdir -p /home/builder/.gnupg
+          chmod 700 /home/builder/.gnupg
+          chown -R builder:builder /home/builder/.gnupg
+          echo "$GPG_PRIVATE_KEY" > /home/builder/private.key
+          chown builder:builder /home/builder/private.key
+          sudo -u builder gpg --batch --import /home/builder/private.key
+          shred -u /home/builder/private.key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          
+      - name: Configurar GPG
+        run: |
+          echo "use-agent" >> /home/builder/.gnupg/gpg.conf
+          echo "pinentry-mode loopback" >> /home/builder/.gnupg/gpg.conf
+          echo "allow-loopback-pinentry" >> /home/builder/.gnupg/gpg-agent.conf
+          chown -R builder:builder /home/builder/.gnupg
+          sudo -u builder gpg-connect-agent reloadagent /bye
 
-          CHANGED_DIRS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^packages/' | cut -d/ -f2 | sort -u)
+      - name: Configurar chave de assinatura
+        run: |
+         sudo -u builder bash -c "echo 'GPGKEY=75093C925C10C833109F4445C7C3766AE5979ABC' > ~/.makepkg.conf"
 
-          for dir in $CHANGED_DIRS; do
-            cd "$dir"
-            pkgname=$(source PKGBUILD && echo $pkgname)
-            pkgver=$(source PKGBUILD && echo $pkgver)
-            pkgrel=$(source PKGBUILD && echo $pkgrel)
-            arch=$(source PKGBUILD && echo ${arch[0]})
-            output_file="../../repo/${pkgname}-${pkgver}-${pkgrel}-${arch}.pkg.tar.zst"
-
-            if [[ ! -f "$output_file" ]]; then
-              echo "Compilando $pkgname..."
-              sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
-              cp *.pkg.tar.zst ../../repo/
-            fi
-            cd ..
-          done
-          cd ..
       - name: Verificar pacotes do dispacth
         if: github.event_name == 'workflow_dispatch'
         run: |
+          git rev-parse --is-inside-work-tree
           rm -rf repo
           mkdir -p repo
           cd packages
@@ -81,34 +81,37 @@ jobs:
             fi
             cd ..
           done
-      - name: Verificar pacotes do push
-        if: github.event_name == 'push'
+      - name: Assinando Pacotes
         run: |
-          mkdir -p repo
-          cd packages
-
-          CHANGED_DIRS=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^packages/' | cut -d/ -f2 | sort -u)
-
-          for dir in $CHANGED_DIRS; do
-            cd "$dir"
-            echo "Compilando $pkgname..."
-            sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
-            cp *.pkg.tar.zst ${GITHUB_WORKSPACE}/repo/
-            cd ..
+          chown builder:builder -R ${GITHUB_WORKSPACE}/repo/
+          chmod 777 -R ${GITHUB_WORKSPACE}/repo/
+          cd ${GITHUB_WORKSPACE}/repo/
+          for pkg in *.pkg.tar.zst; do
+            echo "Assinando pacote $pkg"
+            sudo -u builder env GPG_PASSPHRASE="$GPG_PASSPHRASE" bash -c '
+              gpg --batch --yes --pinentry-mode loopback \
+                  --passphrase "$GPG_PASSPHRASE" \
+                  --detach-sign --output "$1.sig" "$1"
+            ' bash "$pkg"
           done
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
 
       - name: Atualizar banco de pacotes
         run: |
+          git rev-parse --is-inside-work-tree
           cd ${GITHUB_WORKSPACE}
           cd repo
-          repo-add -n -R orion.db.tar.gz *.pkg.tar.zst
+          repo-add -n -R --sign orion.db.tar.gz *.pkg.tar.zst
 
       - name: Commit e Push
         run: |
-          pwd
+          git rev-parse --is-inside-work-tree
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
           git add repo/*.pkg.tar.zst
+          git add repo/*.pkg.tar.zst.sig
           git add repo/*.db* repo/*.files*
           git commit -m "Atualiza repositório com novos pacotes" || echo "Nada para commitar"
           git push
