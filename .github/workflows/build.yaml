@@ -22,9 +22,6 @@ jobs:
       - name: Instalar dependências
         run: |
           pacman -Syu --noconfirm base-devel git
-          ls -la
-          git rev-parse --is-inside-work-tree
-          pwd
           
       - name: Checkout PR
         uses: actions/checkout@v4
