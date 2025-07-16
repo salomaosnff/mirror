@@ -82,6 +82,8 @@ jobs:
           done
       - name: Assinando Pacotes
         run: |
+          chown builder:builder -R ${GITHUB_WORKSPACE}/repo/
+          chmod 655 -R ${GITHUB_WORKSPACE}/repo/
           cd ${GITHUB_WORKSPACE}/repo/
           for pkg in *.pkg.tar.zst; do
             echo "Assinando pacote $pkg"
