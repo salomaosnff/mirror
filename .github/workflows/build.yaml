@@ -39,6 +39,7 @@ jobs:
       - name: Importar chave GPG
         run: |
           mkdir -p /home/builder/.gnupg
+          chown builder:builder -R /home/builder/.gnupg
           echo "$GPG_PRIVATE_KEY" > /home/builder/private.key
           chown builder:builder /home/builder/private.key
           sudo -u builder gpg --batch --import /home/builder/private.key
