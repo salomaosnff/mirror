@@ -22,6 +22,7 @@ jobs:
       - name: Instalar dependências
         run: |
           pacman -Syu --noconfirm base-devel git
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           
       - name: Checkout PR
         uses: actions/checkout@v4
