@@ -26,8 +26,8 @@ jobs:
 
       - name: Instalar dependências
         run: |
-          git rev-parse --is-inside-work-tree
           pacman -Syu --noconfirm base-devel git
+          git rev-parse --is-inside-work-tree
           pwd
 
       - name: Create user
