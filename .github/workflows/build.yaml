@@ -72,13 +72,20 @@ jobs:
             if [[ -f PKGBUILD ]]; then
               echo "Compilando $pkgname..."
                 if grep -q '^package()' PKGBUILD; then
-                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild --sign --passphrase-fd 0 <<< '$GPG_PASSPHRASE'"
+                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
                 else
-                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -d --noconfirm --sign --passphrase-fd 0 <<< '$GPG_PASSPHRASE'"
+                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -d --noconfirm"
                 fi
               cp *.pkg.tar.zst ../../repo/
             fi
             cd ..
+          done
+      - name: Assinando Pacotes
+        run: |
+          cd ${GITHUB_WORKSPACE}/repo/
+          for pkg in *.pkg.tar.zst; do
+            echo "Assinando pacote $pkg"
+             sudo -u builder bash -c  "gpg --detach-sign --pinentry-mode loopback --passphrase --passphrase-fd 0 --output \"$pkg.sig\" --sign $pkg  --passphrase-fd 0 <<< \"$GPG_PASSPHRASE\""
           done
 
 
