@@ -91,8 +91,8 @@ jobs:
             sudo -u builder env GPG_PASSPHRASE="$GPG_PASSPHRASE" bash -c '
               gpg --batch --yes --pinentry-mode loopback \
                   --passphrase "$GPG_PASSPHRASE" \
-                  --detach-sign --output "${pkg}.sig" "$pkg"
-            '
+                  --detach-sign --output "$1.sig" "$1"
+            ' bash "$pkg"
           done
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
