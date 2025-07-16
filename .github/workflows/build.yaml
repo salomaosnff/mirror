@@ -21,9 +21,9 @@ jobs:
     steps:
       - name: Instalar dependências
         run: |
-          pacman -Syu --noconfirm base-devel git
+          pacman -Syu --noconfirm base-devel git gnupg
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
-          
+   
       - name: Checkout PR
         uses: actions/checkout@v4
         with:
@@ -31,36 +31,33 @@ jobs:
           
       - name: Create user
         run: |
-          git rev-parse --is-inside-work-tree
           useradd -m builder
           passwd -d builder
           echo "builder ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/builder
           chmod 777 -R $GITHUB_WORKSPACE
 
-      - name: Verificar pacotes do PR alterados e compilar
-        if: github.event_name == 'pull_request'
+      - name: Importar chave GPG
         run: |
-          mkdir -p repo
-          cd packages
+          mkdir -p /home/builder/.gnupg
+          echo "$GPG_PRIVATE_KEY" > /home/builder/private.key
+          chown builder:builder /home/builder/private.key
+          sudo -u builder gpg --batch --import /home/builder/private.key
+          shred -u /home/builder/private.key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          
+      - name: Configurar GPG
+        run: |
+          echo "use-agent" >> /home/builder/.gnupg/gpg.conf
+          echo "pinentry-mode loopback" >> /home/builder/.gnupg/gpg.conf
+          echo "allow-loopback-pinentry" >> /home/builder/.gnupg/gpg-agent.conf
+          chown -R builder:builder /home/builder/.gnupg
+          sudo -u builder gpg-connect-agent reloadagent /bye
 
-          CHANGED_DIRS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^packages/' | cut -d/ -f2 | sort -u)
+      - name: Configurar chave de assinatura
+        run: |
+         sudo -u builder bash -c "echo 'GPGKEY=75093C925C10C833109F4445C7C3766AE5979ABC' > ~/.makepkg.conf"
 
-          for dir in $CHANGED_DIRS; do
-            cd "$dir"
-            pkgname=$(source PKGBUILD && echo $pkgname)
-            pkgver=$(source PKGBUILD && echo $pkgver)
-            pkgrel=$(source PKGBUILD && echo $pkgrel)
-            arch=$(source PKGBUILD && echo ${arch[0]})
-            output_file="../../repo/${pkgname}-${pkgver}-${pkgrel}-${arch}.pkg.tar.zst"
-
-            if [[ ! -f "$output_file" ]]; then
-              echo "Compilando $pkgname..."
-              sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
-              cp *.pkg.tar.zst ../../repo/
-            fi
-            cd ..
-          done
-          cd ..
       - name: Verificar pacotes do dispacth
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -74,37 +71,22 @@ jobs:
             if [[ -f PKGBUILD ]]; then
               echo "Compilando $pkgname..."
                 if grep -q '^package()' PKGBUILD; then
-                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
+                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild --sign --passphrase-fd 0 <<< "$GPG_PASSPHRASE""
                 else
-                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -d --noconfirm"
+                sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -d --noconfirm --sign --passphrase-fd 0 <<< "$GPG_PASSPHRASE""
                 fi
               cp *.pkg.tar.zst ../../repo/
             fi
             cd ..
           done
-      - name: Verificar pacotes do push
-        if: github.event_name == 'push'
-        run: |
-          git rev-parse --is-inside-work-tree
-          mkdir -p repo
-          cd packages
 
-          CHANGED_DIRS=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^packages/' | cut -d/ -f2 | sort -u)
-
-          for dir in $CHANGED_DIRS; do
-            cd "$dir"
-            echo "Compilando $pkgname..."
-            sudo -u builder bash -c "cd $GITHUB_WORKSPACE/packages/$dir && makepkg -sf --noconfirm --clean --cleanbuild"
-            cp *.pkg.tar.zst ${GITHUB_WORKSPACE}/repo/
-            cd ..
-          done
 
       - name: Atualizar banco de pacotes
         run: |
           git rev-parse --is-inside-work-tree
           cd ${GITHUB_WORKSPACE}
           cd repo
-          repo-add -n -R orion.db.tar.gz *.pkg.tar.zst
+          repo-add -n -R --sign orion.db.tar.gz *.pkg.tar.zst
 
       - name: Commit e Push
         run: |
